@@ -1,0 +1,103 @@
+#!/bin/bash
+
+# change this for different date formats and time span scope
+date_format=+%m-%d-%y
+# change this for different file extension (ex .txt)
+ext=''
+
+usage() {
+	cat << EOF
+Dim is a date-based utility for writing quick notes
+Usage: dim [option] <date>
+        -n      	print the filepath
+	-o		print the file
+	-e editor	specify an editor
+	-h		show this help
+
+Example:
+	# edit today's notes
+	$ dim
+	
+        # write some notes for Monday before enjoying the weekend
+        $ echo "reminder to do that one thing" | dim monday
+
+        # understand Monday morning what you did on Friday
+        $ dim -o last friday | less 
+
+	# procrastinate a bit
+	$ dim -o today | dim tomorrow
+
+	# mark a great day
+	$ cp \$(dim -n) ~/favorites/cool-stuff  
+
+Environment:
+        \$DIM_WS the directory to read/write notes
+        \$DIM_EDITOR editor used to read/write files
+EOF
+}
+
+
+editor_flag='true'
+output_flag='false'
+date=$(date $date_format)
+editor=$DIM_EDITOR
+
+# check flags
+while getopts 'noe:h' flag; do
+ 	case "${flag}" in
+		n) editor_flag='false' ;;
+		o) output_flag='true' ;;
+		e) editor=$OPTARG ;;
+		h) usage
+		   exit 0 ;;
+    		?) echo 'use `dim -h` for help'
+       		   exit 1 ;;
+	esac
+done
+
+# check date passed in
+shift $((OPTIND - 1))
+if [[ $* != "" ]]; then
+	date=$(date $date_format -d "$*")
+	if [[ $? -ne 0 ]]; then
+		exit 1
+	fi
+fi
+
+if [[ "$DIM_WS" == "" ]]; then
+	echo "workspace not found, set \$DIM_WS to begin"
+	exit 1
+fi
+
+file_path=$DIM_WS/$date$ext
+
+# pipe any input
+# https://stackoverflow.com/questions/19408649/pipe-input-into-a-script
+if [ -p /dev/stdin ]; then
+        while IFS= read line; do
+                echo ${line} >> $file_path
+        done
+	exit 0
+fi
+
+if [[ $output_flag == 'true' ]]; then
+	if test -f "$file_path"; then
+		cat $file_path
+	fi
+	exit $?
+fi 
+
+# check editors in priority of -e, DIM_EDITOR, EDITOR
+if [[ $editor_flag == 'true' ]]; then 
+	if [[ $editor == "" ]]; then
+		if [[ $EDITOR == "" ]]; then
+			printf "editor not found\nuse \`dim -h\` for help"
+			exit 1
+		fi
+		editor=$EDITOR
+	fi
+	$editor $file_path
+else
+	echo $file_path
+fi
+exit 0
