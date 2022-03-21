@@ -22,9 +22,9 @@ Example:
         $ dim -o today | dim tomorrow
         
         # mark a great day
-        $ cp \$(dim -n) ~/favorites/cool-stuff  
+        $ cp $(dim -n) ~/favorites/cool-stuff  
         
 Environment:
-        \$DIM_WS the directory to read/write notes
-        \$DIM_EDITOR editor used to read/write files
+        $DIM_WS the directory to read/write notes
+        $DIM_EDITOR editor used to read/write files
 ```
